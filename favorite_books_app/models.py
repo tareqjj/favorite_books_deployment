@@ -1,101 +1,49 @@
 from django.db import models
-import bcrypt
-import re
+from django.utils import timezone
+
 # Create your models here.
-class UserManager(models.Manager):
-    def reg_validator(self, postData):
+class ShowManager(models.Manager):
+    def basic_validator(self, postData):
         errors = {}
-
-        EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
         # add keys and values to errors dictionary for each invalid field
-        if len(postData['first_name']) < 2:
-            errors["first_name"] = "First Name should be at least 2 characters"
-
-        if len(postData['last_name']) < 2:
-            errors["last_name"] = "Last Name should be at least 2 characters"
-
-        if not EMAIL_REGEX.match(postData['email']):
-            errors['email'] = "Invalid email address!"
-
-        if len(postData['password']) < 1:
-            errors["pw_length"] = "Password should be at least 8 characters"
-
-        if postData['password'] != postData['confirm_pw']:
-            errors['pw_match'] = "Passwords must match"
-
-        if User.objects.all().filter(email=postData['email']):
-            errors['not_unique'] = 'email address already registered'
+        if len(postData['title']) < 2:
+            errors["title"] = "Show title should be at least 2 characters"
+        if len(postData['network']) < 3:
+            errors["network"] = "Show network should be at least 3 characters"
+        if postData['desc'] != "":
+            if len(postData['desc']) < 10:
+                errors["desc"] = "Show description should be at least 10 characters"
+        if postData['release_date'] > str(timezone.now()):
+            errors['release_date'] = "Show release date should be in the past"
+        if Show.objects.all().filter(title=postData['title']):
+            errors['not_unique'] = 'Show title should be unique'
         return errors
 
-    def login_validator(self, postData):
-        errors = {}
-        EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]+$')
-
-        if not EMAIL_REGEX.match(postData['email']):
-            errors['email'] = "Invalid email address!"
-
-        if len(postData['password']) < 1:
-            errors["pw_length"] = "Password should be at least 8 characters"
-        return errors
-
-class User(models.Model):
-    first_name = models.CharField(max_length=45)
-    last_name = models.CharField(max_length=45)
-    email = models.CharField(max_length=45)
-    password = models.CharField(max_length=255)
-    created_at = models.DateTimeField(auto_now_add=True)
+class Show(models.Model):
+    title = models.CharField(max_length=255)
+    network = models.CharField(max_length=255)
+    release_date = models.DateField()
+    desc = models.TextField()
     updated_at = models.DateTimeField(auto_now=True)
-    objects = UserManager()
+    objects = ShowManager()
 
-class Message(models.Model):
-    user = models.ForeignKey(User, related_name="user_messages", on_delete=models.CASCADE)
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-class Comment(models.Model):
-    user = models.ForeignKey(User, related_name="user_comments", on_delete=models.CASCADE)
-    message = models.ForeignKey(Message, related_name="message_comments", on_delete=models.CASCADE)
-    comment = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-def reg_user(user_info):
-    password = user_info['password']
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    new_user = User.objects.create(first_name=user_info['first_name'], last_name=user_info['last_name'], email=user_info['email'], password=hashed)
-    user_info = {
-        'user_id': new_user.id,
-        'first_name': new_user.first_name,
-        'last_name': new_user.last_name,
-    }
-    return user_info
-
-def login_user(user_info):
-    user = User.objects.filter(email=user_info['email'])
-    if user:
-        logged_user = user[0]
-        if bcrypt.checkpw(user_info['password'].encode(), logged_user.password.encode()):
-            user_info = {
-                'user_id': logged_user.id,
-                'first_name': logged_user.first_name,
-                'last_name': logged_user.last_name,
-            }
-            return user_info
-    return False
-
-def add_message(user_id, message_content):
-    Message.objects.create(message=message_content['message'], user=User.objects.get(id=user_id))
-
-def add_comment(user_id, comment_info):
-    Comment.objects.create(comment=comment_info['comment'], user=User.objects.get(id=user_id), message=Message.objects.get(id=comment_info['message_id']))
-
-def view_wall():
-    context = {
-        'all_messages': Message.objects.all().order_by('-created_at'),
-        'all_comments': Comment.objects.all()
-    }
+def display_shows():
+    context = {'all_shows': Show.objects.all()}
     return context
 
-def remove_message(message_id):
-    Message.objects.get(id=message_id).delete()
+def show_info(show_id):
+    context = {'show_info': Show.objects.get(id=show_id)}
+    return context
+
+
+def edit_show(show_id, updated_info):
+    Show.objects.filter(id=show_id).update(title=updated_info['title'], network=updated_info['network'],
+                        release_date=updated_info['release_date'], desc=updated_info['desc'])
+
+def add_show(show_info):
+    new_show = Show.objects.create(title=show_info['title'], network=show_info['network'],
+                        release_date=show_info['release_date'], desc=show_info['desc'])
+    return new_show.id
+
+def remove_show(show_id):
+    Show.objects.get(id=show_id).delete()
