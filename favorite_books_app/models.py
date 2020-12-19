@@ -1,7 +1,6 @@
 from django.db import models
 import bcrypt
 import re
-
 # Create your models here.
 class UserManager(models.Manager):
     def reg_validator(self, postData):
@@ -18,7 +17,7 @@ class UserManager(models.Manager):
         if not EMAIL_REGEX.match(postData['email']):
             errors['email'] = "Invalid email address!"
 
-        if len(postData['password']) < 8:
+        if len(postData['password']) < 1:
             errors["pw_length"] = "Password should be at least 8 characters"
 
         if postData['password'] != postData['confirm_pw']:
@@ -35,18 +34,8 @@ class UserManager(models.Manager):
         if not EMAIL_REGEX.match(postData['email']):
             errors['email'] = "Invalid email address!"
 
-        if len(postData['password']) < 8:
+        if len(postData['password']) < 1:
             errors["pw_length"] = "Password should be at least 8 characters"
-        return errors
-
-class BookManager(models.Manager):
-    def book_validator(self, postData):
-        errors = {}
-        if len(postData['title']) < 1:
-            errors["title"] = "Title Name should be at least 1 character"
-
-        if len(postData['description']) < 5:
-            errors["description"] = "Description should be at least 5 characters"
         return errors
 
 class User(models.Model):
@@ -57,17 +46,19 @@ class User(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = UserManager()
-    # liked_books = a list of books a given user likes
-    # books_uploaded = a list of books uploaded by a given user
 
-class Book(models.Model):
-    title = models.CharField(max_length=255)
-    desc = models.TextField()
-    uploaded_by = models.ForeignKey(User, related_name="books_uploaded", on_delete=models.CASCADE)
-    users_who_like = models.ManyToManyField(User, related_name="liked_books")
+class Message(models.Model):
+    user = models.ForeignKey(User, related_name="user_messages", on_delete=models.CASCADE)
+    message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    objects = BookManager()
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, related_name="user_comments", on_delete=models.CASCADE)
+    message = models.ForeignKey(Message, related_name="message_comments", on_delete=models.CASCADE)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 def reg_user(user_info):
     password = user_info['password']
@@ -93,48 +84,18 @@ def login_user(user_info):
             return user_info
     return False
 
-def add_book_DB(book_info, user_id):
-    new_book = Book.objects.create(title=book_info['title'], desc=book_info['description'], uploaded_by=User.objects.get(id=user_id))
-    Book.objects.get(id=new_book.id).users_who_like.add(User.objects.get(id=user_id))
+def add_message(user_id, message_content):
+    Message.objects.create(message=message_content['message'], user=User.objects.get(id=user_id))
 
-def add_book_toFavorite(book_id, user_id):
-    Book.objects.get(id=book_id).users_who_like.add(User.objects.get(id=user_id))
+def add_comment(user_id, comment_info):
+    Comment.objects.create(comment=comment_info['comment'], user=User.objects.get(id=user_id), message=Message.objects.get(id=comment_info['message_id']))
 
-def remove_book_fromFavorite(book_id, user_id):
-    Book.objects.get(id=book_id).users_who_like.remove(User.objects.get(id=user_id))
-
-def editBook(book_id, edited_info):
-    Book.objects.filter(id=book_id).update(title=edited_info['title'], desc=edited_info['description'])
-
-def remove_Book(book_id):
-    Book.objects.get(id=book_id).delete()
-
-def view_bookInfo(book_id, user_id):
-    liked_books = User.objects.get(id=user_id).liked_books.all()
-    likedBooks_list=[]
-    for book in liked_books:
-        likedBooks_list.append(book.id)
+def view_wall():
     context = {
-        'book_info': Book.objects.get(id=book_id),
-        'users': Book.objects.get(id=book_id).users_who_like.all(),
-        'liked_books': likedBooks_list
+        'all_messages': Message.objects.all().order_by('-created_at'),
+        'all_comments': Comment.objects.all()
     }
     return context
 
-def view_books(user_id):
-    liked_books = User.objects.get(id=user_id).liked_books.all()
-    likedBooks_list=[]
-    for book in liked_books:
-        likedBooks_list.append(book.id)
-
-    context = {
-        'all_books': Book.objects.all(),
-        'liked_books': likedBooks_list
-    }
-    return context
-
-def view_userPage(user_id):
-    context = {
-        'all_liked_books': User.objects.get(id=user_id).liked_books.all()
-    }
-    return context
+def remove_message(message_id):
+    Message.objects.get(id=message_id).delete()
