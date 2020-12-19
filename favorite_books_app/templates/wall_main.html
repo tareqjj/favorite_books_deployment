@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        main{margin: 20px; padding: 0px 50px}
+        button{margin: 10px}
+        #display_comment{margin: 10px 50px; background-color: #d8f3a5; border-radius: 10px; padding: 5px}
+        #display_messages{background-color: #6894ff; border-radius: 10px; padding: 5px; margin: 10px auto;}
+        div a{color: #faf1e6; background-color: #ef3f3f; padding: 0px 2px; border:1px solid black; border-radius: 5px; box-shadow: black 2px 2px 2px; text-decoration: none !important;;}
+    </style>
+    <title>The Wall</title>
+</head>
+<body>
+    <main>
+        <a href="/logout">Log Out</a>
+        <div id="post_message">
+            <h1>Hello {{request.session.logged_user_info.first_name}} {{request.session.logged_user_info.last_name}}</h1>
+            <form action="/post_message" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label><h5>Post a message:</h5></label>
+                    <textarea class="form-control" name='message' rows="3"></textarea>
+                    <button type="submit" class="btn btn-primary">Post a message</button>
+                </div>
+            </form>
+        </div>{% for message in all_messages %}
+        <div id="display_messages">
+            <h5>{{message.user.first_name}} {{message.user.last_name}} {{message.created_at}}</h5>
+            <p>{{message.message}}</p>
+            <a href="/delete/{{message.user.id}}/{{message.id}}">Delete</a>
+        </div>      {% for comment in message.message_comments.all %}
+        <div id="display_comment">
+            <h6>{{comment.user.first_name}} {{comment.user.last_name}} {{comment.created_at}}</h6>
+            <p>{{comment.comment}}</p>
+        </div>      {% endfor %}
+        <div id="comment_form">
+            <form action="/post_comment" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Post a comment</label>
+                    <textarea class="form-control" name="comment" rows="3"></textarea>
+                    <input type="hidden" name="message_id" value="{{message.id}}">
+                    <button type="submit" class="btn btn-success">Post a comment</button>
+                </div>
+            </form>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>
