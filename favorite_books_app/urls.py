@@ -7,13 +7,9 @@ urlpatterns = [
     path('add_user', views.add_user),
     path('login', views.login),
     path('logout', views.logout),
-    path('add_book', views.add_book),
-    path('display_books', views.display_books),
-    path('add_toFavorite/<int:book_id>', views.add_toFavorite),
-    path('remove_fromFavorite/<int:book_id>', views.remove_fromFavorite),
-    path('books/<int:book_id>/edit', views.edit_book),
-    path('books/<int:book_id>', views.display_bookInfo),
-    path('books/<int:book_id>/destroy', views.delete_book),
-    path('books/user', views.display_userPage)
+    path('post_message', views.post_message),
+    path('wall', views.display_wall),
+    path('post_comment', views.post_comment),
+    path('delete/<int:user_id>/<int:message_id>', views.delete_message),
 ]
 
