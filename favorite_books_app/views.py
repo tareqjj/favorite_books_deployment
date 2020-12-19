@@ -2,56 +2,49 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from . import models
 
+
 # Create your views here.
-def display_login_reg(request):
-    return render(request, 'login_reg_page.html')
+def root(request):
+    return redirect('/shows')
 
-def add_user(request):
-    errors = models.User.objects.reg_validator(request.POST)
+def shows(request):
+    context = models.display_shows()
+    return render(request, 'shows.html', context)
+
+def display_showInfo(request, show_id):
+    context = models.show_info(show_id)
+    return render(request, 'show_info.html', context)
+
+def edit_page(request, show_id):
+    context = {'show_id': show_id}
+    return render(request, 'edit_show.html', context)
+
+def edit_show(request, show_id):
+    errors = models.Show.objects.basic_validator(request.POST)
     if len(errors) > 0:
         for key, value in errors.items():
             messages.error(request, value)
-        return redirect('/')
+        return redirect('/shows/' + str(show_id) + '/edit')
     else:
-        logged_user = models.reg_user(request.POST)
-        request.session['logged_user_info'] = logged_user
-        return redirect('/wall')
+        messages.success(request, "Show successfully updated")
+        models.edit_show(show_id, request.POST)
+        return redirect('/shows/' + str(show_id))
 
-def login(request):
-    errors = models.User.objects.login_validator(request.POST)
+def add_show_page(request):
+    return render(request, 'add_show.html')
+
+def add_show(request):
+    errors = models.Show.objects.basic_validator(request.POST)
     if len(errors) > 0:
         for key, value in errors.items():
             messages.error(request, value)
-        return redirect('/')
+        return redirect('/shows/new')
     else:
-        logged_user = models.login_user(request.POST)
-        if logged_user:
-            request.session['logged_user_info'] = logged_user
-            return redirect('/wall')
-        return redirect("/")
+        show_id = models.add_show(request.POST)
+        messages.success(request, "Show successfully created")
+        return redirect('/shows/' + str(show_id))
 
-def logout(request):
-    del request.session['logged_user_info']
-    return redirect('/')
-
-def post_message(request):
-    models.add_message(request.session['logged_user_info']['user_id'], request.POST)
-    return redirect('/wall')
-
-def post_comment(request):
-    models.add_comment(request.session['logged_user_info']['user_id'], request.POST)
-    return redirect('/wall')
-
-
-def display_wall(request):
-    if 'logged_user_info' in request.session:
-        context = models.view_wall()
-        return render(request, 'wall_main.html', context)
-    else:
-        return redirect("/")
-
-def delete_message(request, user_id, message_id):
-    if user_id == request.session['logged_user_info']['user_id']:
-        models.remove_message(message_id)
-    return redirect('/wall')
+def delete_show(request,show_id):
+    models.remove_show(show_id)
+    return redirect('/shows')
 
