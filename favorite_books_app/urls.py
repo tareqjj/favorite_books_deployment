@@ -1,15 +1,13 @@
-from django.urls import path     
+from django.urls import path
 from . import views
 
-
 urlpatterns = [
-    path('', views.display_login_reg),
-    path('add_user', views.add_user),
-    path('login', views.login),
-    path('logout', views.logout),
-    path('post_message', views.post_message),
-    path('wall', views.display_wall),
-    path('post_comment', views.post_comment),
-    path('delete/<int:user_id>/<int:message_id>', views.delete_message),
+    path('', views.root),
+    path('shows', views.shows),
+    path('shows/<int:show_id>', views.display_showInfo),
+    path('shows/<int:show_id>/edit', views.edit_page),
+    path('edit_show/<int:show_id>', views.edit_show),
+    path('shows/new', views.add_show_page),
+    path('add_show', views.add_show),
+    path('shows/<int:show_id>/destroy', views.delete_show),
 ]
-
